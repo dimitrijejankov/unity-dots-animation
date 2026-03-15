@@ -1,20 +1,16 @@
 {
-    "name": "Bendz.Dots.Animation",
-    "rootNamespace": "AnimationSystem",
+    "name": "Bendz.Dots.Animation.Editor",
+    "rootNamespace": "AnimationSystem.Editor",
     "references": [
+        "Bendz.Dots.Animation",
         "Unity.Entities",
-        "Unity.Entities.Hybrid",
-        "Unity.Entities.Graphics",
-        "Unity.Burst",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
-        "Unity.Deformations",
-        "Unity.Collections",
-        "Unity.Transforms",
-        "Unity.Rendering",
-        "Unity.Physics"
+        "Unity.Collections"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": true,
     "overrideReferences": false,

@@ -1,49 +1,90 @@
-# unity-dots-animation
-Simple animation system for the unity dots stack.
+# Simple DOTS Animation
 
-## Samples
+High-performance, stateless animation library for the Unity DOTS stack.
 
-### Benchmark Scence
-![Sample Gif](Samples~/sample.gif)
+## Overview
 
-To execute the sample:
+This package provides a fast, Burst-compatible animation runtime built on top of the Entity Component System (ECS). It focuses on a **stateless pose pipeline**, where animations are sampled into a buffer and then modified by various operations (blending, IK, warping) before being sent to the skinning system.
 
-1. Open or create a unity 2022.2 project using the URP pipeline
-2. Add the package using the package manager -> "Add package from git url" using the https url of this repo
-3. Go to the samples tab of this package in the package manager and open the benchmark sample
-4. Open the "SampleScene"
+## Key Features
+
+- **Blob-Based Assets:** Animations (`Motion`) and Rigs (`Skeleton`) are stored as efficient, serialized `BlobAssetReference` data.
+- **Stateless Pose Operations:** A library of `Ops` (in `AnimationSystem.Ops`) for blending, IK, and warping that operate on `Span<RigidTransform>` pose buffers.
+- **Advanced Blending:** Support for local/mesh-space blending, additive blending, and layered blending based on bone hierarchy.
+- **Inertialization:** High-quality, high-performance transitions based on GDC 2018 techniques.
+- **Inverse Kinematics (IK):** Built-in Two-Bone IK and Foot IK for terrain adaptation.
+- **Procedural Warping:** Stride Warping and Orientation Warping for realistic locomotion.
+- **Virtual Bones & Curves:** Support for custom curve data stored alongside bone tracks.
+- **Optimized Skinning:** Parallelized, Burst-compiled skinning systems for handling thousands of characters.
+
+## Installation
+
+Add the package via the Unity Package Manager using the git URL of this repository.
+
+### Dependencies
+- `com.unity.entities`: 1.0.11+
+- `com.unity.entities.graphics`: 1.0.11+
 
 ## Usage
 
-### Setup
-1. Install the package using the package manager -> "Add package from git url" using the https url of this repo
-2. Add the `AnimationsAuthoring` component to the root entity of a rigged model/prefab
-3. Add animation clips to the "clips" list
-4. Add the `SkinnedMeshAuthoring` component to any children that should be deformed (have a skinned mesh renderer)
+### 1. Rig Setup
+1. Use the **Bendz Rig Importer** (in the Unity Editor) to bake your FBX animations into a `BendzRig` asset containing `Motion` and `Skeleton` blobs.
+2. Add the `BendzRigAuthoring` component to your root character entity.
+3. Assign the `BendzRig` asset to the `Rig` field.
 
-Now the first animation clip should be executed on entering playmode.
+### 2. Skinning Setup
+1. On each child GameObject with a `SkinnedMeshRenderer`, add the `BendzSkinAuthoring` component.
+2. Assign the same `BendzRig` asset.
+3. Ensure the `SkinIndex` matches the correct skin in the rig (usually 0).
 
-### Playing & switching animations
+### 3. Sampling & Pose Pipeline
+The system is designed to be sampled manually within your own ECS systems. This allows for complex state machines or procedural animation logic.
 
-Use the `AnimationAspect` to to easily play and switch animations.
-The animation clip will also start from 0 even if the same index is used again.
-
-This example plays the animationClip with index 1 for all entities:
 ```csharp
-var clipIndex = 1;
-foreach (var animationAspect in SystemAPI.Query<AnimationAspect>())
-{
-    animationAspect.Play(clipIndex);
-}
+using AnimationSystem;
+using AnimationSystem.Ops;
+
+// Inside an ISystem.OnUpdate or Job
+var rig = SystemAPI.GetSharedComponent<SkeletonRef>(entity);
+var motion = SystemAPI.GetSharedComponent<MotionRef>(entity);
+var poseBuffer = SystemAPI.GetBuffer<BonePose>(entity);
+
+// Convert buffer to Span for Ops
+var poseSpan = poseBuffer.AsTransformArray().AsSpan();
+
+// Sample an animation at time T
+PoseOps.SamplePoseAtTime(
+    ref motion.Value.Value, 
+    animationIndex, 
+    time, 
+    SamplingMode.Interpolated,
+    poseSpan);
 ```
 
-This example blends from the current clip to the next with the specified duration & set it to loop:
+### 4. Advanced Operations
+Use the `Ops` library to apply procedural modifications:
+
 ```csharp
-var clipIndex = 1;
-foreach (var animationAspect in SystemAPI.Query<AnimationAspect>())
-{
-    animationAspect.Crossfade(clipIndex, 0.5f, true);
-}
+// Apply Two-Bone IK to a leg
+TwoBoneIKOps.ApplyTwoBoneIK(
+    poseSpan, 
+    upperIdx, midIdx, lowerIdx, 
+    targetPos, 
+    poleVector, 
+    skeleton.Value.Value.ParentIndices);
 ```
 
-For more advanced usage, you can modify the `AnimationPlayer` component directly.
+## Core Components
+
+- `MotionRef`: Shared component holding the `Motion` blob (animation tracks).
+- `SkeletonRef`: Shared component holding the `Skeleton` blob (hierarchy, bind poses, skins).
+- `BonePose`: Buffer element storing the current local-space pose of each bone.
+- `BoneInertia`: Buffer element for tracking inertialization state.
+- `SkinRef`: Shared component on skinned meshes to link them to a rig.
+
+## Pose Pipeline Logic
+
+1. **Sample:** Sample raw animation(s) into the `BonePose` buffer.
+2. **Modify:** Use `Ops` to apply blending, additive layers, IK, and warping.
+3. **Inertialize:** (Optional) If transitioning, apply `InertializerOps` for a smooth pop-free result.
+4. **Skin:** `SkinMatrixFromBonePoseSystem` automatically processes all entities with a `BonePose` buffer and `SkinRef` component.

@@ -1,22 +1,17 @@
 {
-    "name": "com.bendz.dots.animation",
-    "version": "0.0.6",
-    "description": "Simple animation library for dots.",
-    "displayName": "Simple Dots Animation",
-    "unity": "2022.2",
-    "author": {
-        "name": "Ben Dzaebel",
-        "email": "bendzae@gmail.com"
-    },
-    "dependencies": {
-        "com.unity.entities": "1.0.11",
-        "com.unity.entities.graphics": "1.0.11"
-    },
-    "samples": [
-        {
-            "displayName": "Benchmark Test",
-            "description": "Spawn multiple animated characters",
-            "path": "Samples~/BenchmarkScene"
-        }
-    ]
+  "name": "com.bendz.dots.animation",
+  "version": "0.0.6",
+  "description": "Simple animation library for dots.",
+  "displayName": "Simple Dots Animation",
+  "unity": "6000.0",
+  "author": {
+    "name": "Ben Dzaebel",
+    "email": "bendzae@gmail.com"
+  },
+  "dependencies": {
+    "com.unity.entities": "1.4.2",
+    "com.unity.entities.graphics": "1.4.15",
+    "com.unity.physics": "1.4.2"
+  },
+  "_fingerprint": "a5ae1e1998765f872ce5c2e54b7ebddec723e1f7"
 }
